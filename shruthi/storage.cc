@@ -194,19 +194,20 @@ void Storage::SysExParseCommand() {
     case 0x01:  // Patch transfer
       sysex_rx_expected_size_ = StorageConfiguration<Patch>::size;
       break;
-    
+
     case 0x02:  // Sequence transfer
       sysex_rx_expected_size_ = \
           StorageConfiguration<SequencerSettings>::size;
       break;
-      
+
     case 0x03:  // Wavetable dump
       sysex_rx_destination_ = user_wavetable;
       sysex_rx_expected_size_ = kUserWavetableSize;
       break;
-    
-    case 0x11:  // Patch or sequence request
+
+    case 0x11:  // Patch or sequence or settings request
     case 0x12:
+    case 0x13:
       sysex_rx_expected_size_ = 0;
       break;
 
@@ -214,14 +215,22 @@ void Storage::SysExParseCommand() {
     case 0x22:
       sysex_rx_expected_size_ = 2;
       break;
-        
+
+    case 0x30: // Sequence step edit request
+      sysex_rx_expected_size_ = 3;
+      break;
+
     case 0x40:
     case 0x41:
     case 0x42:
     case 0x43:
       sysex_rx_expected_size_ = kSysExBulkDumpBlockSize;
       break;
-      
+
+    case 0x50: // Patch name transfer
+      sysex_rx_expected_size_ = kPatchNameSize;
+      break;
+
     default:
       sysex_rx_state_ = RECEIVING_FOOTER;
       break;
@@ -235,16 +244,16 @@ void Storage::SysExAcceptBuffer() {
     case 0x01:  // Patch transfer
       success = AcceptData(engine.mutable_patch(), sysex_rx_buffer_);
       break;
-      
+
     case 0x02:  // Sequence transfer
       success = AcceptData(engine.mutable_sequencer_settings(),
                            sysex_rx_buffer_);
       break;
-    
+
     case 0x03:
       success = 1;
       break;
-    
+
     case 0x11:
       Delay(100);
       Storage::SysExDump(engine.mutable_patch());
@@ -255,6 +264,11 @@ void Storage::SysExAcceptBuffer() {
       Storage::SysExDump(engine.mutable_sequencer_settings());
       break;
 
+    case 0x13:
+      Delay(100);
+      Storage::SysExDump(engine.mutable_system_settings());
+      break;
+
     case 0x21:
       WritePatch((sysex_rx_buffer_[0] << 8) | (sysex_rx_buffer_[1]));
       break;
@@ -262,7 +276,11 @@ void Storage::SysExAcceptBuffer() {
     case 0x22:
       WriteSequence((sysex_rx_buffer_[0] << 8) | (sysex_rx_buffer_[1]));
       break;
-    
+
+    case 0x30:
+      engine.SetSequenceStep(sysex_rx_buffer_[0],  sysex_rx_buffer_[1], sysex_rx_buffer_[2]);
+      break;
+
     case 0x40:  // Raw data dump
     case 0x41:
     case 0x42:
@@ -292,6 +310,11 @@ void Storage::SysExAcceptBuffer() {
         }
       }
       break;
+
+    case 0x50:
+      engine.SetName(sysex_rx_buffer_);
+      break;
+
   }
   sysex_rx_state_ = success ? RECEPTION_OK : RECEPTION_ERROR;
 }

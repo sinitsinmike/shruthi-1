@@ -32,6 +32,7 @@
 namespace shruthi {
 
 const uint8_t kDataEntryResendRate = 32;
+static int8_t current_data_msb = -1; // filter redundant data entry msb
 
 class MidiDispatcher : public midi::MidiDevice {
  public:
@@ -41,7 +42,9 @@ class MidiDispatcher : public midi::MidiDevice {
   };
   typedef avrlib::RingBuffer<MidiDispatcher> OutputBuffer;
   typedef avrlib::DataTypeForSize<data_size>::Type Value;
-  MidiDispatcher() { }
+
+
+  MidiDispatcher(){ }
 
   // ------ MIDI in handling ---------------------------------------------------
 
@@ -97,7 +100,7 @@ class MidiDispatcher : public midi::MidiDevice {
   static void OmniModeOn(uint8_t channel) {
     engine.OmniModeOn(channel);
   }
-  
+
   static void ProgramChange(uint8_t channel, uint8_t program) {
     uint16_t n = program + (current_bank_ << 7);
     if (n < Storage::size<Patch>()) {
@@ -108,12 +111,12 @@ class MidiDispatcher : public midi::MidiDevice {
       engine.TouchPatch(0);
     }
   }
-  
+
   static void Reset() { engine.Reset(); }
   static void Clock() { engine.Clock(); }
   static void Start() { engine.Start(); }
   static void Stop() { engine.Stop(); }
-  
+
   static void SysExStart() {
     ProcessSysEx(0xf0);
   }
@@ -129,13 +132,13 @@ class MidiDispatcher : public midi::MidiDevice {
       display.set_status('#');
     }
   }
-  
+
   static uint8_t CheckChannel(uint8_t channel) {
     const SystemSettings& settings = engine.system_settings();
     return settings.midi_channel == 0 ||
            settings.midi_channel == (channel + 1);
   }
-  
+
   static uint8_t ProcessTriggers(uint8_t status, uint8_t note) {
     // Since "triggers" can occur on any channel, this is where trigger
     // detection must occur.
@@ -153,7 +156,7 @@ class MidiDispatcher : public midi::MidiDevice {
         return 1;
       }
     }
-    
+
     uint8_t ch2 = (s.trigger[1].channel - 1) & 0xf;
     if (note == s.trigger[1].note) {
       if (status == (0x90 | ch2)) {
@@ -167,19 +170,19 @@ class MidiDispatcher : public midi::MidiDevice {
         return 1;
       }
     }
-    
+
     return 0;
   }
-  
+
   static void RawMidiData(
       uint8_t status,
       uint8_t* data,
       uint8_t data_size,
       uint8_t accepted_channel) {
     uint8_t hi = status & 0xf0;
-    
+
     ProcessTriggers(status, data[0]);
-    
+
     // When is parsed midi data forwarded to the MIDI out?
     // - When the data is a channel different from the RX channel.
     // - When we are in "Full" mode.
@@ -194,7 +197,7 @@ class MidiDispatcher : public midi::MidiDevice {
       }
     }
   }
-  
+
   static void RawByte(uint8_t byte) {
     // Report that some data has been received. The MIDI Out filter might
     // propagate it directly to the output if "Soft Thru" is enabled.
@@ -202,7 +205,7 @@ class MidiDispatcher : public midi::MidiDevice {
       OutputBuffer::Overwrite(byte);
     }
   }
-  
+
   // ------ MIDI out handling --------------------------------------------------
   static inline void NoteKilled(uint8_t note) {
     if (mode() == MIDI_OUT_SEQUENCER) {
@@ -235,9 +238,14 @@ class MidiDispatcher : public midi::MidiDevice {
       Send3(0xb0 | channel(), midi::kNrpnLsb, index);
       current_parameter_index_ = index;
       data_entry_counter_ = 0;
+      current_data_msb = -1; // reset data msb filter
     }
-    if (value & 0x80) {
+    if ((value & 0x80) && (current_data_msb != 1)) {
       Send3(0xb0 | channel(), midi::kDataEntryMsb, 1);
+      current_data_msb = 1;
+    }else if(!(value & 0x80) && current_data_msb != 0){
+      Send3(0xb0 | channel(), midi::kDataEntryMsb, 0);
+      current_data_msb = 0;
     }
     Send3(0xb0 | channel(), midi::kDataEntryLsb, value & 0x7f);
   }
@@ -260,30 +268,30 @@ class MidiDispatcher : public midi::MidiDevice {
   static uint8_t ImmediateRead() {
     return OutputBuffer::ImmediateRead();
   }
-  
+
   static void Send3(uint8_t status, uint8_t a, uint8_t b);
-  
+
  private:
   static void Send(uint8_t status, uint8_t* data, uint8_t size);
-  
+
   static void ProcessSysEx(uint8_t byte) {
     if (mode() >= MIDI_OUT_SPLIT) {
       Send(byte, NULL, 0);
     }
     Storage::SysExReceive(byte);
   }
-  
+
   static uint8_t mode() { return engine.system_settings().midi_out_mode; }
   static uint8_t channel() {
     return engine.system_settings().midi_channel == 0
         ? 0
         : engine.system_settings().midi_channel - 1;
   }
-  
+
   static uint8_t data_entry_counter_;
   static uint8_t current_parameter_index_;
   static uint8_t current_bank_;
-  
+
   DISALLOW_COPY_AND_ASSIGN(MidiDispatcher);
 };
 

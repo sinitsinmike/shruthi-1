@@ -43,7 +43,7 @@ enum Flow {
   WARP_REVERSE,
   WARP_BACK_FORTH_1,
   WARP_BACK_FORTH_2,
-  
+
   WARP_GLASS,
   WARP_KRAMA,
   WARP_JATA,
@@ -81,7 +81,7 @@ class SequenceStep {
   }
   void set_note(uint8_t note) {
     data_[0] = (data_[0] & 0x80) | (note & 0x7f);
-  } 
+  }
   void set_legato(uint8_t legato) {
     if (legato) {
       data_[1] |= 0x80;
@@ -113,9 +113,9 @@ class SequenceStep {
   }
   void set_raw(uint8_t a, uint8_t b) {
     data_[0] = a;
-    data_[0] = b;
+    data_[1] = b;
   }
-  
+
   uint8_t gate() const {
     return data_[0] & 0x80;
   }
@@ -145,7 +145,7 @@ class SequenceStep {
   char character() const {
     return gate() ? (legato() ? '-' : '\x01') : ' ';
   }
-  
+
   void clear() {
     data_[0] = 0;
     data_[1] = 0;
@@ -166,19 +166,18 @@ struct SequencerSettings {
   uint8_t seq_tempo;
   uint8_t seq_groove_template;
   uint8_t seq_groove_amount;
-  
+
   uint8_t arp_direction;
   uint8_t arp_range;
   uint8_t arp_pattern;
   uint8_t arp_warp;
-  
+
   uint8_t pattern_size;
   uint8_t pattern_rotation;
   SequenceStep steps[kNumSteps];
-  
+
   void PrintStep(uint8_t step, char* buffer) const;
-  
-  uint8_t* saved_data() { return (uint8_t*)(&steps[0]); }
+  uint8_t* saved_data() { return (uint8_t*)(this); }
   void PrepareForWrite();
   uint8_t CheckBuffer(uint8_t* buffer) { return 1; }
   void Update() {
@@ -202,7 +201,7 @@ enum SequencerParameter {
   PRM_ARP_RANGE,
   PRM_ARP_PATTERN,
   PRM_ARP_WARP,
-  
+
   PRM_SEQ_PATTERN_SIZE,
   PRM_SEQ_PATTERN_ROTATION,
 };

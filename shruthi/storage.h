@@ -32,7 +32,7 @@
 #include "shruthi/system_settings.h"
 
 namespace shruthi {
-  
+
 enum SysExReceptionState {
   RECEIVING_HEADER = 0,
   RECEIVING_OLD_HEADER = 1,
@@ -68,26 +68,35 @@ template<> class StorageConfiguration<SequencerSettings> {
         StorageConfiguration<Patch>::num_internal * PATCH_SIZE,
     offset_external = StorageConfiguration<Patch>::offset_external + \
         StorageConfiguration<Patch>::num_external * PATCH_SIZE,
-    size = sizeof(SequenceStep) * kNumSteps,
+    size = sizeof(SequencerSettings),
     sysex_object_id = 0x02,
     undo_buffer_offset = PATCH_SIZE,
+  };
+};
+
+template<> class StorageConfiguration<SystemSettings> {
+ public:
+  enum {
+    size = sizeof(SystemSettings),
+    sysex_object_id = 0x04,
+    undo_buffer_offset = 0,
   };
 };
 
 class Storage {
  public:
   static void Init();
-   
+
   static inline uint8_t sysex_rx_state() {
     return sysex_rx_state_;
   }
-  
+
   template<typename T>
   static uint16_t size() {
     return StorageConfiguration<T>::num_internal +
            StorageConfiguration<T>::num_external * num_accessible_banks_;
   }
-  
+
   static uint16_t addressable_space_size() {
     return kInternalEepromSize + num_accessible_banks_ * kBankSize;
   }
@@ -101,9 +110,9 @@ class Storage {
         0,
         StorageConfiguration<T>::size);
   }
-  
+
   static void SysExBulkDump();
-  
+
   static void SysExReceive(uint8_t sysex_rx_byte);
 
   template<typename T>
@@ -118,12 +127,12 @@ class Storage {
   static void Restore(T* ptr) {
     AcceptData(ptr, undo_buffer_ + StorageConfiguration<T>::undo_buffer_offset);
   }
-  
+
   static void WritePatch(uint16_t slot);
   static void WriteSequence(uint16_t slot);
   static void LoadPatch(uint16_t slot);
   static void LoadSequence(uint16_t slot);
-  
+
   template<typename T>
   static uint8_t AcceptData(T* ptr, uint8_t* data) {
     uint8_t success = ptr->CheckBuffer(data);
@@ -133,7 +142,7 @@ class Storage {
     }
     return success;
   }
-   
+
  private:
   template<typename T>
   static void Write(T* ptr, uint16_t slot) {
@@ -143,7 +152,7 @@ class Storage {
           (uint8_t *)(ptr->saved_data()),
           address<T>(slot),
           StorageConfiguration<T>::size);
-      
+
     } else {
       WriteExternal(
           (uint8_t *)(ptr->saved_data()),
@@ -166,7 +175,7 @@ class Storage {
     }
     AcceptData(ptr, load_buffer_);
   }
-  
+
   template<typename T>
   static uint8_t* address(uint16_t slot) {
     if (slot < StorageConfiguration<T>::num_internal) {
@@ -183,7 +192,7 @@ class Storage {
       return (uint8_t*)(base + StorageConfiguration<T>::size * slot);
     }
   }
-  
+
   static void WriteExternal(const uint8_t* data, uint16_t address, uint8_t size);
   static void ReadExternal(uint8_t* data, uint16_t address, uint8_t size);
   static void SysExParseCommand();
