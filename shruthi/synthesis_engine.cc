@@ -460,20 +460,6 @@ void SynthesisEngine::Stop() {
   controller_.StopAndKillNotes();
 }
 
-void SynthesisEngine::SetName(uint8_t *new_name){
-  memcpy(patch_.name, new_name, kPatchNameSize);
-  dirty_ = 1;
-}
-
-void SynthesisEngine::SetSequenceStep(uint8_t step, uint8_t data_a, uint8_t data_b){
-  if(step >= kNumSteps){
-    return;
-  }
-  sequencer_settings_.steps[step].set_raw(data_a, data_b);
-  controller_.TouchSequence();
-  dirty_ = 1;
-}
-
 /* static */
 void SynthesisEngine::SetName(uint8_t* name) {
   memcpy(patch_.name, name, kPatchNameSize);
@@ -481,11 +467,11 @@ void SynthesisEngine::SetName(uint8_t* name) {
 }
 
 /* static */
-void SynthesisEngine::SetSequenceStep(uint8_t step, uint8_t a, uint8_t b) {
+void SynthesisEngine::SetSequenceStep(uint8_t step, uint8_t data_a, uint8_t data_b) {
   if (step >= kNumSteps) {
     return;
   }
-  sequencer_settings_.steps[step].set_raw(a, b);
+  sequencer_settings_.steps[step].set_raw(data_a, data_b);
   controller_.TouchSequence();
   dirty_ = 1;
 }
