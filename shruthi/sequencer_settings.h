@@ -70,7 +70,8 @@ enum ArpeggioDirection {
   ARPEGGIO_DIRECTION_RANDOM,
 };
 
-struct SequenceStep {
+class SequenceStep {
+ public:
   void set_gate(uint8_t gate) {
     if (gate) {
       data_[0] |= 0x80;
@@ -153,6 +154,7 @@ struct SequenceStep {
     return (data_[0] == 0) && (data_[1] == 0);
   }
 
+ // private: // or is getter better? Omits need for get_raw()
   uint8_t data_[2];
 };
 
@@ -175,7 +177,8 @@ struct SequencerSettings {
   SequenceStep steps[kNumSteps];
 
   void PrintStep(uint8_t step, char* buffer) const;
-  uint8_t* saved_data() { return (uint8_t*)(this); }
+  uint8_t* saved_data() { return (uint8_t*)(&steps[0]); }
+  // uint8_t* all_data() { return (uint8_t*)(this); }
   void PrepareForWrite();
   uint8_t CheckBuffer(uint8_t* buffer) { return 1; }
   void Update() {

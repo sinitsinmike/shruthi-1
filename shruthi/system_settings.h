@@ -64,9 +64,9 @@ class SystemSettings {
   void EepromSave() const;
   uint8_t EepromLoad();
 
-  uint8_t* saved_data() { return (uint8_t*)(this); }
-  void PrepareForWrite() { /* do something? */ };
-  uint8_t CheckBuffer(uint8_t* buffer){ /* to be implemented */};
+  // uint8_t* saved_data() { return (uint8_t*)(this); }
+  // void PrepareForWrite() {  do something?  };
+  // uint8_t CheckBuffer(uint8_t* buffer){ /* to be implemented */ };
 };
 
 enum FilterBoard {

@@ -68,18 +68,9 @@ template<> class StorageConfiguration<SequencerSettings> {
         StorageConfiguration<Patch>::num_internal * PATCH_SIZE,
     offset_external = StorageConfiguration<Patch>::offset_external + \
         StorageConfiguration<Patch>::num_external * PATCH_SIZE,
-    size = sizeof(SequencerSettings),
+    size = sizeof(SequenceStep) * kNumSteps,
     sysex_object_id = 0x02,
     undo_buffer_offset = PATCH_SIZE,
-  };
-};
-
-template<> class StorageConfiguration<SystemSettings> {
- public:
-  enum {
-    size = sizeof(SystemSettings),
-    sysex_object_id = 0x04,
-    undo_buffer_offset = 0,
   };
 };
 
