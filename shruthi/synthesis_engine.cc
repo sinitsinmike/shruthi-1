@@ -475,6 +475,22 @@ void SynthesisEngine::SetSequenceStep(uint8_t step, uint8_t data_a, uint8_t data
 }
 
 /* static */
+void SynthesisEngine::SetName(uint8_t* name) {
+  memcpy(patch_.name, name, kPatchNameSize);
+  dirty_ = 1;
+}
+
+/* static */
+void SynthesisEngine::SetSequenceStep(uint8_t step, uint8_t a, uint8_t b) {
+  if (step >= kNumSteps) {
+    return;
+  }
+  sequencer_settings_.steps[step].set_raw(a, b);
+  controller_.TouchSequence();
+  dirty_ = 1;
+}
+
+/* static */
 void SynthesisEngine::SetScaledParameter(
     uint8_t ui_parameter_index,
     uint8_t value,
