@@ -99,7 +99,7 @@ class Voice {
   static uint8_t modulation_destination(uint8_t i) {
     return modulation_destinations_[i];
   }
-  
+
   static inline void set_modulation_source(uint8_t i, uint8_t value) {
     modulation_sources_[i] = value;
   }
@@ -109,19 +109,19 @@ class Voice {
       uint8_t value) {
     unregistered_modulation_sources_[i] = value;
   }
-  
+
   static Envelope* mutable_envelope(uint8_t i) { return &envelope_[i]; }
   static void TriggerEnvelope(uint8_t stage);
   static void TriggerEnvelope(uint8_t index, uint8_t stage);
-  
+
  private:
   static inline void LoadSources() __attribute__((always_inline));
   static inline void ProcessModulationMatrix() __attribute__((always_inline));
   static inline void UpdateDestinations() __attribute__((always_inline));
   static inline void RenderOscillators() __attribute__((always_inline));
-  
+
   static uint16_t NoteToPitch(uint8_t note);
-   
+
   // Envelope generators.
   static Envelope envelope_[kNumEnvelopes];
   static uint8_t disable_envelope_auto_retriggering_[kNumEnvelopes];
@@ -148,7 +148,7 @@ class Voice {
 
   static uint8_t last_note_;
   static uint8_t osc1_phase_msb_;
-  
+
   static uint8_t buffer_[kAudioBlockSize];
   static uint8_t osc2_buffer_[kAudioBlockSize];
   static uint8_t sync_state_[kAudioBlockSize];
@@ -189,7 +189,6 @@ class SynthesisEngine : public midi::MidiDevice {
   static void Trigger(uint8_t index, uint8_t value) {
     voice_.set_modulation_source(MOD_SRC_TRIG_1 + index, value);
   }
-  
   static void SetName(uint8_t* name);
   static void SetSequenceStep(uint8_t index, uint8_t data_a, uint8_t data_b);
 
@@ -260,17 +259,17 @@ class SynthesisEngine : public midi::MidiDevice {
   }
 
   static const Voice& voice() { return voice_; }
-  
+
   static uint8_t dirty() {
     uint8_t value = dirty_;
     dirty_ = 0;
     return value;
   }
-  
+
   static inline uint8_t fx_control_byte() {
     return (patch_.filter_1_mode_ << 4) | patch_.filter_2_mode_;
   }
-  
+
   static inline uint8_t pvk_routing_byte() {
     uint8_t byte = 0;
     if (patch_.filter_1_mode_ == FILTER_MODE_LP) {
@@ -284,9 +283,9 @@ class SynthesisEngine : public midi::MidiDevice {
     }
     return byte;
   }
-  
+
   static uint8_t four_pole_routing_byte();
-  
+
   static inline uint8_t svf_routing_byte() {
     uint8_t byte = 0;
     uint8_t filter_1_mode = patch_.filter_1_mode_;
@@ -298,11 +297,11 @@ class SynthesisEngine : public midi::MidiDevice {
     } else if (filter_1_mode == FILTER_MODE_HP) {
       byte = 4;
     }
-    if (patch_.filter_2_mode_ >= FILTER_MODE_SERIAL_LP && 
+    if (patch_.filter_2_mode_ >= FILTER_MODE_SERIAL_LP &&
         patch_.filter_2_mode_ <= FILTER_MODE_SERIAL_HP) {
       byte |= 1;  // Do not mix filter 1 to the output.
     }
-    
+
     uint8_t filter_2_mode = patch_.filter_2_mode_;
     if (filter_2_mode >= 3) {
       filter_2_mode -= 3;
@@ -317,14 +316,14 @@ class SynthesisEngine : public midi::MidiDevice {
     }
     return byte;
   }
-  
+
  private:
   static uint8_t data_access_byte_[1];
   static Patch patch_;
   static SequencerSettings sequencer_settings_;
   static SystemSettings system_settings_;
   static ExtraSystemSettings extra_system_settings_;
-  
+
   static Lfo lfo_[kNumLfos];
   static uint8_t previous_lfo_fm_[kNumLfos];
 

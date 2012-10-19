@@ -83,7 +83,7 @@ void SynthesisEngine::Init() {
   voice_.Init();
   nrpn_parameter_number_ = 255;
   dirty_ = 0;
-  
+
   // Fill the "user" wavetable with data from an existing wavetable.
   ResourcesManager::Load(
       wav_res_waves,
@@ -126,7 +126,7 @@ static const prog_char init_patch[] PROGMEM = {
     PRM_FILTER_RESONANCE, 0,
     PRM_FILTER_ENV, 0,
     // Settings for second filter
-    0, 0, 0, 
+    0, 0, 0,
     0, 0, 0, 0,
     '!',
     0, 0, 0, 0, 0, 0, 0, 0,
@@ -136,7 +136,7 @@ static const prog_char init_sequence[] PROGMEM = {
     // Sequencer
     SEQUENCER_MODE_STEP, 120, 0, WARP_NORMAL,
     ARPEGGIO_DIRECTION_UP, 1, 0, ARPEGGIO_VELOCITY_SOURCE_KEYBOARD,
-    
+
     // Pattern size and pattern
     16,
     0,
@@ -253,7 +253,7 @@ void SynthesisEngine::NoteOff(uint8_t channel, uint8_t note, uint8_t velocity) {
     // is not the current unit, forward to the next unit in the chain.
     if (polychaining_allocator_.NoteOff(note) == 0) {
       voice_.Release();
-    } else { 
+    } else {
       midi_dispatcher.Send3(0x80 | channel, note, 0);
     }
   } else {
@@ -391,7 +391,7 @@ void SynthesisEngine::PitchBend(uint8_t channel, uint16_t pitch_bend) {
 /* static */
 void SynthesisEngine::Aftertouch(uint8_t channel, uint8_t note,
                                  uint8_t velocity) {
-                                   
+
   set_modulation_source(MOD_SRC_AFTERTOUCH, velocity << 1);
 }
 
@@ -467,11 +467,11 @@ void SynthesisEngine::SetName(uint8_t* name) {
 }
 
 /* static */
-void SynthesisEngine::SetSequenceStep(uint8_t step, uint8_t a, uint8_t b) {
+void SynthesisEngine::SetSequenceStep(uint8_t step, uint8_t data_a, uint8_t data_b) {
   if (step >= kNumSteps) {
     return;
   }
-  sequencer_settings_.steps[step].set_raw(a, b);
+  sequencer_settings_.steps[step].set_raw(data_a, data_b);
   controller_.TouchSequence();
   dirty_ = 1;
 }
@@ -634,7 +634,7 @@ void SynthesisEngine::ProcessBlock() {
   set_modulation_source(
       MOD_SRC_STEP,
       controller_.has_arpeggiator_note() ? 255 : 0);
-      
+
   // Update the modulation speed if some of the LFO FM parameters have changed.
   for (uint8_t i = 0; i < kNumLfos; ++i) {
     if (previous_lfo_fm_[i] !=
@@ -807,7 +807,7 @@ void Voice::Release() {
 /* static */
 inline void Voice::LoadSources() {
   static uint8_t ops[8];
-  
+
   // Rescale the value of each modulation sources. Envelopes are in the
   // 0-16383 range ; just like pitch. All are scaled to 0-255.
   modulation_sources_[MOD_SRC_ENV_1] = envelope_[0].Render();
@@ -815,7 +815,7 @@ inline void Voice::LoadSources() {
   modulation_sources_[MOD_SRC_NOTE] = U14ShiftRight6(pitch_value_);
   modulation_sources_[MOD_SRC_GATE] = gate_;
   modulation_sources_[MOD_SRC_AUDIO] = buffer_[0];
-  
+
   // Apply the modulation operators
   for (uint8_t i = 0; i < 2; ++i) {
     if (!engine.patch_.ops_[i].op) {
@@ -855,7 +855,7 @@ inline void Voice::LoadSources() {
   }
 
   modulation_destinations_[MOD_DST_VCA] = engine.volume_;
-  
+
   // Load and scale to 0-16383 the initial value of each modulated parameter.
   dst_[MOD_DST_FILTER_CUTOFF] = U8U8Mul(
       engine.patch_.filter_cutoff, 128);
@@ -967,7 +967,7 @@ inline void Voice::UpdateDestinations() {
       engine.patch_.filter_1_mode_ >= FILTER_MODE_LP_COUPLED) {
     dst_[MOD_DST_CV_1] = S16ClipU14(dst_[MOD_DST_CV_1] + cutoff - 8192);
   }
-  
+
   // Store in memory all the updated parameters.
   modulation_destinations_[MOD_DST_FILTER_CUTOFF] = U14ShiftRight6(cutoff);
   modulation_destinations_[MOD_DST_FILTER_RESONANCE] = U14ShiftRight6(
@@ -977,7 +977,7 @@ inline void Voice::UpdateDestinations() {
   modulation_destinations_[MOD_DST_CV_2] = U14ShiftRight6(dst_[MOD_DST_CV_2]);
   modulation_destinations_[MOD_DST_LFO_1] = S16ShiftRight8(dst_[MOD_DST_LFO_1]);
   modulation_destinations_[MOD_DST_LFO_2] = S16ShiftRight8(dst_[MOD_DST_LFO_2]);
-  
+
   if (dst_[MOD_DST_TRIGGER_ENV_1] > 6000) {
     if (!modulation_destinations_[MOD_DST_TRIGGER_ENV_1]) {
       envelope_[0].Trigger(ATTACK);
@@ -995,12 +995,12 @@ inline void Voice::UpdateDestinations() {
   } else {
     modulation_destinations_[MOD_DST_TRIGGER_ENV_2] = 0;
   }
-  
+
   osc_1.set_parameter(U15ShiftRight7(dst_[MOD_DST_PWM_1]));
   osc_1.set_secondary_parameter(engine.patch_.osc[0].range + 24);
   osc_2.set_parameter(U15ShiftRight7(dst_[MOD_DST_PWM_2]));
   osc_2.set_secondary_parameter(engine.patch_.osc[1].range + 24);
-  
+
   int8_t attack_mod = U15ShiftRight7(dst_[MOD_DST_ATTACK]) - 64;
   attack_mod <<= 1;
   for (int i = 0; i < kNumEnvelopes; ++i) {
@@ -1026,22 +1026,22 @@ inline void Voice::RenderOscillators() {
   base_pitch += (dst_[MOD_DST_VCO_1_2_FINE] - 8192) >> 7;
   // -1 / +1 semitones by master tuning.
   base_pitch += engine.system_settings_.master_tuning;
-  
+
   const NoteStack& stack = engine.voice_controller().notes();
   const NoteEntry& top_note = stack.most_recent_note();
   const NoteEntry& next_note = stack.note(top_note.next_ptr);
-  
+
   // Update the oscillator parameters.
   for (uint8_t i = 0; i < kNumOscillators; ++i) {
     int16_t pitch = base_pitch;
-    
+
     // This is where we look up the list of most recently pressed notes for
     // the duophonic mode.
     if (engine.patch_.osc[0].option == OP_DUO && i == 1) {
       pitch -= pitch_value_;
       pitch += aux_pitch_;
     }
-    
+
     // -24 / +24 semitones by the range controller.
     int8_t range = 0;
     if (engine.patch_.osc[i].shape != WAVEFORM_FM) {
@@ -1133,7 +1133,7 @@ inline void Voice::ProcessBlock() {
   ProcessModulationMatrix();
   UpdateDestinations();
   RenderOscillators();
-  
+
   // Skip the oscillator rendering code is the VCA output has converged to
   // a small value.
   if (vca() < 2) {
@@ -1142,11 +1142,11 @@ inline void Voice::ProcessBlock() {
     }
     return;
   }
-  
+
   uint8_t op = engine.patch_.osc[0].option;
   // By default, disable rhythmical mixing.
   uint8_t enabled_source_bitmask = 0xff;
-  
+
   // With the sequenced mixing mode, use a different value of the bitmask.
   if (op == OP_PING_PONG_2) {
     enabled_source_bitmask = (trigger_count_ & 1) ? 0x0e : 0x0d;
@@ -1159,7 +1159,7 @@ inline void Voice::ProcessBlock() {
   } else if (op == OP_PING_PONG_SEQ) {
     enabled_source_bitmask = modulation_sources_[MOD_SRC_SEQ] >> 4;
   }
-  
+
   uint8_t osc_2_gain = U14ShiftRight6(dst_[MOD_DST_MIX_BALANCE]);
   uint8_t osc_1_gain = ~osc_2_gain;
   if (enabled_source_bitmask != 0xff && (enabled_source_bitmask & 3) != 3) {
@@ -1228,7 +1228,7 @@ inline void Voice::ProcessBlock() {
               osc_2_gain);
         }
         break;
-    }    
+    }
   }
   uint8_t decimate = 1;
   if (op == OP_CRUSH_4) {
@@ -1236,7 +1236,7 @@ inline void Voice::ProcessBlock() {
   } else if (op == OP_CRUSH_8) {
     decimate = 8;
   }
-  
+
   // Mix-in sub oscillator or transient generator.
   uint8_t sub_gain = U15ShiftRight7(dst_[MOD_DST_MIX_SUB_OSC]);
   if (enabled_source_bitmask != 0xff) {
@@ -1254,7 +1254,7 @@ inline void Voice::ProcessBlock() {
     transient_generator.Render(
         engine.patch_.mix_sub_osc_shape, buffer_, sub_gain);
   }
-  
+
   // Apply optional bitcrushing.
   if (decimate > 1) {
     uint8_t* buffer = buffer_;
@@ -1265,7 +1265,7 @@ inline void Voice::ProcessBlock() {
       }
     }
   }
-  
+
   // Mix with noise and output.
   uint8_t noise = Random::GetByte();
   uint8_t noise_gain = S16ShiftRight8(dst_[MOD_DST_MIX_NOISE]);
