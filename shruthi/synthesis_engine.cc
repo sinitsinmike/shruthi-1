@@ -285,8 +285,7 @@ void SynthesisEngine::ControlChange(uint8_t channel, uint8_t controller,
     controller = controller - 12 + 66;  // CCs for cutoff2 and resonance2.
     editing_controller = 1;
   } else if (controller >= 102 && controller <= 119) {
-    // CCs for filter mods, envelopes and LFOs.
-    controller = controller - 102 + 14;
+    controller = controller - 102 + 14; // CCs for filter mods, envelopes and LFOs.
     editing_controller = 1;
   } else {
     switch (controller) {
@@ -461,20 +460,6 @@ void SynthesisEngine::Stop() {
   controller_.StopAndKillNotes();
 }
 
-void SynthesisEngine::SetName(uint8_t *new_name){
-  memcpy(patch_.name, new_name, kPatchNameSize);
-  dirty_ = 1;
-}
-
-void SynthesisEngine::SetSequenceStep(uint8_t step, uint8_t data_a, uint8_t data_b){
-  if(step >= kNumSteps){
-    return;
-  }
-  sequencer_settings_.steps[step].set_raw(data_a, data_b);
-  controller_.TouchSequence();
-  dirty_ = 1;
-}
-
 /* static */
 void SynthesisEngine::SetName(uint8_t* name) {
   memcpy(patch_.name, name, kPatchNameSize);
@@ -482,28 +467,11 @@ void SynthesisEngine::SetName(uint8_t* name) {
 }
 
 /* static */
-void SynthesisEngine::SetSequenceStep(
-    uint8_t step,
-    uint8_t data_a,
-    uint8_t data_b) {
+void SynthesisEngine::SetSequenceStep(uint8_t step, uint8_t data_a, uint8_t data_b) {
   if (step >= kNumSteps) {
     return;
   }
   sequencer_settings_.steps[step].set_raw(data_a, data_b);
-  controller_.TouchSequence();
-  dirty_ = 1;
-}
-
-/* static */
-void SynthesisEngine::SetPatternRotation(uint8_t rotation) {
-  sequencer_settings_.pattern_rotation = rotation;
-  controller_.TouchSequence();
-  dirty_ = 1;
-}
-
-/* static */
-void SynthesisEngine::SetPatternLength(uint8_t length) {
-  sequencer_settings_.pattern_size = length & 0xf;
   controller_.TouchSequence();
   dirty_ = 1;
 }
