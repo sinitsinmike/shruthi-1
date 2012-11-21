@@ -210,7 +210,7 @@ void Storage::SysExParseCommand() {
       break;
 
     case 0x05:  // Sequence step transfer
-      sysex_rx_expected_size_ = 3;
+      sysex_rx_expected_size_ = 2;
       break;
 
     case 0x06:  // Patch name transfer
@@ -221,16 +221,16 @@ void Storage::SysExParseCommand() {
       sysex_rx_expected_size_ = sizeof(SequencerSettings);
       break;
 
-    case 0x11:  // Patch or sequence request
-    case 0x12:
-    case 0x14:  // System settings request
+    case 0x08:  // Set pattern length
+    case 0x09:  // Set pattern rotation
       sysex_rx_expected_size_ = 0;
       break;
 
-    case 0x15:  // Sequence step request
-      sysex_rx_expected_size_ = 1;
-      break;
 
+    case 0x11:  // Patch request
+    case 0x12:  // Sequence request
+    case 0x14:  // System settings request
+    case 0x15:  // Sequence step request
     case 0x16:  // Patch name request
     case 0x17:  // Full sequencer state request
     case 0x18:  // Randomize patch request
@@ -238,16 +238,23 @@ void Storage::SysExParseCommand() {
       sysex_rx_expected_size_ = 0;
       break;
 
-    case 0x21:  // Patch or sequence write request
-    case 0x22:
+    case 0x21:  // Patch write request
+    case 0x22:  // Sequence write request
       sysex_rx_expected_size_ = 2;
       break;
 
-    case 0x40:
+    case 0x40:  // Bulk transfer
     case 0x41:
     case 0x42:
     case 0x43:
       sysex_rx_expected_size_ = kSysExBulkDumpBlockSize;
+      break;
+
+    case 0x50:  // Bulk transfer requests
+    case 0x51:
+    case 0x52:
+    case 0x53:
+      sysex_rx_expected_size_ = 0;
       break;
 
     default:
@@ -265,7 +272,10 @@ void Storage::SysExAcceptBuffer() {
       break;
 
     case 0x02:  // Sequence transfer
-      success = AcceptData(engine.mutable_sequencer_settings(), sysex_rx_buffer_);
+      success = AcceptData(
+        engine.mutable_sequencer_settings(),
+        sysex_rx_buffer_);
+      engine.TouchSequence();
       break;
 
     case 0x03:
@@ -281,36 +291,52 @@ void Storage::SysExAcceptBuffer() {
       success = 1;
       break;
 
-    case 0x05:
-      engine.SetSequenceStep(
+    case 0x05:  // Transfer sequence step
+      {
+        uint8_t stepIndex = sysex_rx_command_[1] & 0x0f;
+
+        engine.SetSequenceStep(
+          stepIndex,
           sysex_rx_buffer_[0],
-          sysex_rx_buffer_[1],
-          sysex_rx_buffer_[2]);
+          sysex_rx_buffer_[1]);
+      }
       success = 1;
       break;
 
-    case 0x06:
+    case 0x06: // Transfer patch name
       engine.SetName(sysex_rx_buffer_);
       success = 1;
       break;
 
     case 0x07:  // full sequencer state transfer
-      success = 1;
       memcpy(
         (uint8_t*) engine.mutable_sequencer_settings(),
         sysex_rx_buffer_,
         sizeof(SequencerSettings));
       engine.mutable_sequencer_settings()->Update();
+      success = 1;
+      break;
+
+    case 0x08: // Set pattern size
+      engine.SetPatternLength(sysex_rx_command_[1] & 0x0f);
+      success = 1;
+      break;
+
+    case 0x09: // Set pattern rotation
+      engine.SetPatternRotation(sysex_rx_command_[1]);
+      success = 1;
       break;
 
     case 0x11:
       Delay(100);
       Storage::SysExDump(engine.mutable_patch());
+      success = 1;
       break;
 
     case 0x12:
       Delay(100);
       Storage::SysExDump(engine.mutable_sequencer_settings());
+      success = 1;
       break;
 
     case 0x14:
@@ -320,23 +346,31 @@ void Storage::SysExAcceptBuffer() {
         0x04,
         0,
         sizeof(SystemSettings));
+      success = 1;
       break;
 
     case 0x15: // sequence step request
-      // uint8_t stepIndex = sysex_rx_buffer_[0] & 0x0f; // modulo 15
-      Storage::SysExDumpBuffer(
-        (uint8_t*) engine.mutable_sequencer_settings()->steps[sysex_rx_buffer_[0] & 0x0f].data_,
-        0x05,
-        0,
-        2);
+      {
+        uint8_t stepIndex = sysex_rx_command_[1] & 0x0f;
+        Delay(100);
+        Storage::SysExDumpBuffer(
+          engine.mutable_sequencer_settings()-> \
+          steps[stepIndex].data_,
+          0x05,
+          stepIndex,
+          2);
+      }
+      success = 1;
       break;
 
     case 0x16: // patch name request
+      Delay(100);
       Storage::SysExDumpBuffer(
         (uint8_t*) engine.mutable_patch()->name,
         0x06,
         0,
         kPatchNameSize);
+      success = 1;
       break;
 
     case 0x17: // full sequencer state request
@@ -346,22 +380,27 @@ void Storage::SysExAcceptBuffer() {
         0x07,
         0,
         sizeof(SequencerSettings));
+      success = 1;
       break;
 
     case 0x18:  // Randomize patch request
       editor.RandomizePatch();
+      success = 1;
       break;
 
     case 0x19:  // Randomize sequence request
       editor.RandomizeSequence();
+      success = 1;
       break;
 
     case 0x21:
       WritePatch((sysex_rx_buffer_[0] << 8) | (sysex_rx_buffer_[1]));
+      success = 1;
       break;
 
     case 0x22:
       WriteSequence((sysex_rx_buffer_[0] << 8) | (sysex_rx_buffer_[1]));
+      success = 1;
       break;
 
     case 0x40:  // Raw data dump
@@ -392,6 +431,13 @@ void Storage::SysExAcceptBuffer() {
               kSysExBulkDumpBlockSize);
         }
       }
+      success = 1;
+      break;
+
+    case 0x50:  // Raw data dump requests
+      Delay(100);
+      SysExBulkDump();
+      success = 1;
       break;
   }
   sysex_rx_state_ = success ? RECEPTION_OK : RECEPTION_ERROR;

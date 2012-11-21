@@ -215,6 +215,10 @@ class Editor {
     current_patch_number_ = patch_number;
   }
 
+  static void set_current_sequence_number(uint16_t sequence_number) {
+    current_sequence_number_ = sequence_number;
+  }
+
   static void RandomizeParameter(uint8_t subpage, uint8_t parameter_index);
   static void RandomizePatch();
   static void RandomizeSequence();
