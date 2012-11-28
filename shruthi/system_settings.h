@@ -36,7 +36,7 @@ struct Trigger {
 class ExtraSystemSettings {
  public:
   Trigger trigger[2];
-  
+
   void EepromSave() const;
   void EepromLoad();
 };
@@ -52,7 +52,7 @@ class SystemSettings {
   uint8_t midi_channel;
   uint8_t midi_out_mode;
   uint8_t midi_split_point;
-  
+
   uint8_t display_delay;
   uint8_t expansion_filter_board;
   uint8_t expansion_cv_mode;
@@ -60,7 +60,7 @@ class SystemSettings {
 
   uint16_t patch_restore_on_boot;
   uint8_t sequence_patch_coupling;
-  
+
   void EepromSave() const;
   uint8_t EepromLoad();
 };
@@ -109,7 +109,7 @@ enum SystemParameter {
   PRM_SYS_MIDI_CHANNEL,
   PRM_SYS_MIDI_OUT_MODE,
   PRM_SYS_MIDI_SPLIT_POINT,
-  
+
   PRM_SYS_DISPLAY_DELAY,
   PRM_SYS_EXPANSION_FILTER_BOARD,
   PRM_SYS_EXPANSION_CV_MODE,
