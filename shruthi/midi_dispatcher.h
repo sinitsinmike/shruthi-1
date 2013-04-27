@@ -32,7 +32,7 @@
 namespace shruthi {
 
 const uint8_t kDataEntryResendRate = 32;
-static int8_t current_data_msb = -1; // filter redundant data entry msb
+// static int8_t current_data_msb = -1; // filter redundant data entry msb
 
 class MidiDispatcher : public midi::MidiDevice {
  public:
@@ -250,14 +250,14 @@ class MidiDispatcher : public midi::MidiDevice {
       Send3(0xb0 | channel(), midi::kNrpnLsb, index);
       current_parameter_index_ = index;
       data_entry_counter_ = 0;
-      current_data_msb = -1; // reset data msb filter
+      current_data_msb_ = 0xff; // reset data msb filter
     }
-    if ((value & 0x80) && (current_data_msb != 1)) {
+    if ((value & 0x80) && (current_data_msb_ != 1)) {
       Send3(0xb0 | channel(), midi::kDataEntryMsb, 1);
-      current_data_msb = 1;
-    }else if(!(value & 0x80) && current_data_msb != 0){
+      current_data_msb_ = 1;
+    }else if(!(value & 0x80) && current_data_msb_ != 0){
       Send3(0xb0 | channel(), midi::kDataEntryMsb, 0);
-      current_data_msb = 0;
+      current_data_msb_ = 0;
     }
     Send3(0xb0 | channel(), midi::kDataEntryLsb, value & 0x7f);
   }
@@ -303,6 +303,7 @@ class MidiDispatcher : public midi::MidiDevice {
   static uint8_t data_entry_counter_;
   static uint8_t current_parameter_index_;
   static uint8_t current_bank_;
+  static uint8_t current_data_msb_;
 
   DISALLOW_COPY_AND_ASSIGN(MidiDispatcher);
 };
