@@ -227,6 +227,7 @@ void Storage::SysExParseCommand() {
       sysex_rx_expected_size_ = 0;
       break;
 
+    case 0x10:  // Current patch and sequence numbers request
     case 0x11:  // Patch request
     case 0x12:  // Sequence request
     case 0x14:  // System settings request
@@ -332,6 +333,17 @@ void Storage::SysExAcceptBuffer() {
       success = 1;
       break;
 
+    case 0x10: // request current patch and sequence #
+      // dirty because we assume patch and sequence number live next to
+      // each other in struct
+      Storage::SysExDumpBuffer(
+              (uint8_t*) &editor.current_patch_number_,
+              0x00,
+              0,
+              sizeof(uint16_t) * 2); // 2x uint16_t
+      success = 1;
+      break;
+
     case 0x11:
       Storage::SysExDump(engine.mutable_patch());
       break;
@@ -339,6 +351,8 @@ void Storage::SysExAcceptBuffer() {
     case 0x12:
       Storage::SysExDump(engine.mutable_sequencer_settings());
       break;
+
+
 
     case 0x14:
       Storage::SysExDumpBuffer(
@@ -429,6 +443,8 @@ void Storage::SysExAcceptBuffer() {
     case 0x50:
       SysExBulkDump();
       break;
+
+
   }
   sysex_rx_state_ = success ? RECEPTION_OK : RECEPTION_ERROR;
 }
