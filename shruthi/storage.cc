@@ -227,13 +227,13 @@ void Storage::SysExParseCommand() {
       sysex_rx_expected_size_ = 0;
       break;
 
-    case 0x10:  // Current patch and sequence numbers request
     case 0x11:  // Patch request
     case 0x12:  // Sequence request
     case 0x14:  // System settings request
     case 0x15:  // Sequence step request
     case 0x16:  // Patch name request
     case 0x17:  // Full sequencer state request
+    case 0x1a:  // Current patch and sequence numbers request
       sysex_rx_expected_size_ = 0;
       break;
 
@@ -333,17 +333,6 @@ void Storage::SysExAcceptBuffer() {
       success = 1;
       break;
 
-    case 0x10: // request current patch and sequence #
-      // dirty because we assume patch and sequence number live next to
-      // each other in struct
-      Storage::SysExDumpBuffer(
-              (uint8_t*) &editor.current_patch_number_,
-              0x00,
-              0,
-              sizeof(uint16_t) * 2); // 2x uint16_t
-      success = 1;
-      break;
-
     case 0x11:
       Storage::SysExDump(engine.mutable_patch());
       break;
@@ -351,8 +340,6 @@ void Storage::SysExAcceptBuffer() {
     case 0x12:
       Storage::SysExDump(engine.mutable_sequencer_settings());
       break;
-
-
 
     case 0x14:
       Storage::SysExDumpBuffer(
@@ -388,6 +375,19 @@ void Storage::SysExAcceptBuffer() {
           0x07,
           0,
           sizeof(SequencerSettings));
+      break;
+
+    case 0x1a: // request current patch and sequence #
+      {
+        uint16_t current_indices[2];
+        current_indices[0] = editor.current_patch_number();
+        current_indices[1] = editor.current_sequence_number();
+        Storage::SysExDumpBuffer(
+            (uint8_t*) &current_indices,
+            0x0a,
+            0,
+            sizeof(current_indices));
+      }
       break;
 
     case 0x21:

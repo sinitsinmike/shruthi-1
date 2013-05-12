@@ -223,6 +223,14 @@ class Editor {
     current_sequence_number_ = sequence_number;
   }
 
+  static uint16_t current_patch_number() {
+    return current_patch_number_;
+  }
+
+  static uint16_t current_sequence_number() {
+    return current_sequence_number_;
+  }
+
  private:
   // This hides or shows the second filter page, with settings for
   // upcoming multimode filters.
@@ -311,10 +319,8 @@ class Editor {
 
   static uint8_t subpage_;
   static uint8_t action_;
-public: // temporary hack
   static uint16_t current_patch_number_;
   static uint16_t current_sequence_number_;
-private:
   static ConfirmPageSettings confirm_page_settings_;
 
   static uint8_t assign_in_progress_;
