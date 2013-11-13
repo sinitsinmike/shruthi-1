@@ -221,18 +221,20 @@ void Storage::SysExParseCommand() {
     case 0x07:  // Full sequencer state transfer
       sysex_rx_expected_size_ = sizeof(SequencerSettings);
       break;
-      
-    case 0x08:  // Set pattern length
-    case 0x09:  // Set pattern rotation
-      sysex_rx_expected_size_ = 0;
-      break;
-    
+
+    // case 0x08:  // Set pattern length
+    // case 0x09:  // Set pattern rotation
+    //   sysex_rx_expected_size_ = 0;
+    //   break;
+
     case 0x11:  // Patch request
     case 0x12:  // Sequence request
     case 0x14:  // System settings request
     case 0x15:  // Sequence step request
     case 0x16:  // Patch name request
     case 0x17:  // Full sequencer state request
+    case 0x1a:  // Current patch and sequence numbers request
+    case 0x1b:  // Num banks request
       sysex_rx_expected_size_ = 0;
       break;
       
@@ -289,31 +291,31 @@ void Storage::SysExAcceptBuffer() {
     case 0x03:
       success = 1;
       break;
-      
-    case 0x04:
+
+    case 0x04:  // System settings transfer
       memcpy(
-          (uint8_t*) engine.mutable_system_settings(),
-          sysex_rx_buffer_,
-          sizeof(SystemSettings));
+        (uint8_t*) engine.mutable_system_settings(),
+        sysex_rx_buffer_,
+        sizeof(SystemSettings));
       engine.mutable_system_settings()->EepromSave();
       success = 1;
       break;
-      
-    case 0x05:
+
+    case 0x05:  // Transfer sequence step
       {
         uint8_t step_index = sysex_rx_command_[1] & 0x0f;
         engine.SetSequenceStep(
-            step_index,
-            sysex_rx_buffer_[0],
-            sysex_rx_buffer_[1]);
+          step_index,
+          sysex_rx_buffer_[0],
+          sysex_rx_buffer_[1]);
       }
       break;
-      
-    case 0x06:
+
+    case 0x06: // Transfer patch name
       engine.SetName(sysex_rx_buffer_);
       break;
-    
-    case 0x07:
+
+    case 0x07:  // full sequencer state transfer
       memcpy(
           (uint8_t*) engine.mutable_sequencer_settings(),
           sysex_rx_buffer_,
@@ -321,17 +323,17 @@ void Storage::SysExAcceptBuffer() {
       engine.mutable_sequencer_settings()->Update();
       success = 1;
       break;
-      
-    case 0x08:
-      engine.SetPatternLength(sysex_rx_command_[1] & 0x0f);
-      success = 1;
-      break;
-      
-    case 0x09:
-      engine.SetPatternRotation(sysex_rx_command_[1] & 0x0f);
-      success = 1;
-      break;
-    
+
+    // case 0x08: // Set pattern size
+    //   engine.SetPatternLength(sysex_rx_command_[1] & 0x0f);
+    //   success = 1;
+    //   break;
+
+    // case 0x09:
+    //   engine.SetPatternRotation(sysex_rx_command_[1] & 0x0f);
+    //   success = 1;
+    //   break;
+
     case 0x11:
       Storage::SysExDump(engine.mutable_patch());
       break;
@@ -339,7 +341,7 @@ void Storage::SysExAcceptBuffer() {
     case 0x12:
       Storage::SysExDump(engine.mutable_sequencer_settings());
       break;
-      
+
     case 0x14:
       Storage::SysExDumpBuffer(
           (uint8_t*) engine.mutable_system_settings(),
@@ -347,8 +349,8 @@ void Storage::SysExAcceptBuffer() {
           0,
           sizeof(SystemSettings));
       break;
-      
-    case 0x15:
+
+    case 0x15: // sequence step request
       {
         uint8_t step_index = sysex_rx_command_[1] & 0x0f;
         Storage::SysExDumpBuffer(
@@ -375,19 +377,28 @@ void Storage::SysExAcceptBuffer() {
           0,
           sizeof(SequencerSettings));
       break;
-      
-    case 0x1a:
+
+    case 0x1a: // request current patch and sequence #
       {
         uint16_t current_indices[2];
         current_indices[0] = editor.current_patch_number();
         current_indices[1] = editor.current_sequence_number();
         Storage::SysExDumpBuffer(
-            (uint8_t*)&current_indices, 0x0a,
+            (uint8_t*) &current_indices,
+            0x0a,
             0,
             sizeof(current_indices));
       }
       break;
-      
+
+    case 0x1b: // request num banks
+      Storage::SysExDumpBuffer(
+          (uint8_t*) NULL,
+          0x0b,
+          num_accessible_banks(),
+          0);
+      break;
+
     case 0x21:
       WritePatch((sysex_rx_buffer_[0] << 8) | (sysex_rx_buffer_[1]));
       success = 1;
