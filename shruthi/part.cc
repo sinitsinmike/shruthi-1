@@ -30,6 +30,7 @@
 #include "shruthi/midi_dispatcher.h"
 #include "shruthi/parameter.h"
 #include "shruthi/storage.h"
+#include "shruthi/parameter.h"
 
 using namespace avrlib;
 
@@ -39,7 +40,7 @@ namespace shruthi {
 Part part;
 
 /* <static> */
-uint8_t Part::data_access_byte_[1];
+uint8_t Part::data_access_byte_[kNumParameters+1];
 Patch Part::patch_;
 SequencerSettings Part::sequencer_settings_;
 SystemSettings Part::system_settings_;
